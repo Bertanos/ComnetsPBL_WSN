@@ -81,7 +81,14 @@ dst_l2addr: AE:A5:E8:55:C9:19:20:44
 
 # Task 3) Sensor hardware
 - GY-BMP280 Temperature/Pressure sensor datasheet: https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp280-ds001.pdf
-TBA
+- In this task we will start using the temperature sensor module GY-BMP280. We will only do temperature readings for now. We will write a driver for this device to break out the functionality that we need.
+- Wiring the sensor is easy: https://wiki.seeedstudio.com/XIAO_BLE/ you should see which pins of the board are the I2C pins; SDA is the data line, SCL is the clock line. Connect the SDA of the sensor to the Xiao's SDA and likewise the SCL pins. Connect the 3V3 and GND to the sensor's Vcc and GND.
+- Go into the folder `02_sensing`. It's based on Task 2's code with 2 added files: `sensor.c` and `sensor.h`.
+- This application introduces a custom shell command `sensor <id|readreg|readregs|writereg>`. With this you can interactively use the sensor module, send receive I2C data. 
+- Fill in the macro definitions you see in `sensor.h`. You'll find the addresses of these registers in the manual.
+- Fill in the functions `Sensor_EnableSampling`, `Sensor_LoadCalibrationData`, `Sensor_DoTemperatureReading`, `Sensor_GetChipId`. The Chip ID query will act as a test to see if I2C comms are working. 
+- The reference manual should have every information you need. Dig into it.
+- Once you implement the functionality and test that it's working, replace the placeholder functions from Task 01 with these.
 
 # Experimental: 
 - You will find the shell script `makescript.sh` in the gnrc_networking example directory. It's a script of mine to make the build process a bit easier but I havent tested it in this context. It should work by simply evoking it `bash makescript.sh` and if you supply a (one or more) serial port name it should flash it i.e. `bash makescript.sh /dev/ttyACM0`
@@ -89,5 +96,7 @@ TBA
 # Links of interest:
 - https://doc.riot-os.org/index.html 
 - https://guide.riot-os.org/
+- Seeedstudio-xiao-nrf52840 board page (pinout and other info here): https://wiki.seeedstudio.com/XIAO_BLE/
 - The gnrc networking stack: https://doc.riot-os.org/group__net__gnrc.html
 - GY-BMP280 Datasheet https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp280-ds001.pdf
+- I2C Basics https://www.circuitbasics.com/basics-of-the-i2c-communication-protocol/
