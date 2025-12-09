@@ -116,11 +116,11 @@ bool Sensor_GetChipId(uint8_t *id)
 
 	res = i2c_read_reg(dev, addr, reg, &data, flags);
 
-    if (res == 0) {
-        *id = data;
-        return true;
+    if (res != 0) {
+        return false;
     }
-    return false;
+	*id = data;
+	return true;
 }
 
 bool Sensor_Reset(void)
@@ -238,22 +238,6 @@ bool Sensor_LoadCalibrationData(void) {
 	return true;
 }
 
-bool test(void) {
-
-	int res;
-	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
-	uint16_t reg = TEMP_SENSOR_REG_CAL_T1;
-	uint16_t data;
-	uint16_t t1;
-	int dev = 0;
-	int flags = 0;
-	int len = 2;
-
-	res = i2c_read_regs(dev, addr, reg, &data, len, flags);
-
-	printf("t1: %i", data);
-}
-
 bool Sensor_Init(void)
 {
   if ((TEMP_SENSOR_I2C_NUM < 0) || (TEMP_SENSOR_I2C_NUM >= (int)I2C_NUMOF)) {
@@ -317,7 +301,8 @@ int Sensor_CmdHandler(int argc, char **argv)
   {
   	bool res;
   	res = Sensor_Reset();
-  	printf("sensor reset: %s\n", (res) ? "true" : "false");
+  	printf("reset: %s\n", (res) ? "success" : "fail");
+  	Sensor_EnableSampling();
   }
   return 0;
 
