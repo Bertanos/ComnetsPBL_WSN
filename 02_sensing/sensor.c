@@ -140,53 +140,30 @@ bool Sensor_GetStatus(uint8_t *status)
   // Optional
 }
 
-bool Sensor_DoTemperatureReading_instruct(uint32_t *reading)
-{
-  // First, Read the 3 temperature reading registers temp_msb, temp_lsb, temp_xlsb.
-
-  // Then, concatenate the raw bytes to get the raw adc temperature reading. 
-  // Note that: 3.11.3 "Temperature value is expected to be in 20 bit format, positive, stored in a 32 bit signed int"
-  // i.e. [MSB][LSB][xLSB], though in our case xLSB will be zeros. Still, those zeros should be in the 20 bits
-  
-  // Finally, use the "bmp280_compensate_T_int32" function given in the reference manual to get the actual reading in 0.01 degrees celcius
-
-  // Put the final reading value into *reading
-
-  return true; // return true if success
-}
-
 bool Sensor_DoTemperatureReading(int32_t *reading)
 {
-    int res_xlsb;
-    int res_lsb;
-    int res_msb;
-    uint16_t addr = TEMP_SENSOR_I2C_ADDR;
-    uint16_t reg_xlsb = TEMP_SENSOR_REG_TEMP_XLSB;
-    uint16_t reg_lsb = TEMP_SENSOR_REG_TEMP_LSB;
-    uint16_t reg_msb = TEMP_SENSOR_REG_TEMP_MSB;
-    uint8_t data;
-    uint8_t xlsb;
-    uint8_t lsb;
-    uint8_t msb;
-    int dev = 0;
-    int flags = 0;
+	int res;
+	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
+	uint16_t regs[] = {TEMP_SENSOR_REG_TEMP_MSB, TEMP_SENSOR_REG_TEMP_LSB, TEMP_SENSOR_REG_TEMP_XLSB};
+	uint16_t results[] = {0, 0, 0};
+	uint8_t data;
+	int dev = 0;
+	int flags = 0;
+	int size_regs = sizeof(regs) / sizeof(regs[0]);
 
-    res_xlsb = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_TEMP_XLSB, &data, flags);
-    xlsb = data;
-    res_lsb = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_TEMP_LSB, &data, flags);
-    lsb = data;
-    res_msb = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_TEMP_MSB, &data, flags);
-    msb = data;
+	for (int i = 0; i < size_regs; i++) {
+		res = i2c_read_reg(dev, addr, regs[i], &data, flags);
+		results[i] = data;
+	}
 
-    printf("xlsb: %i, lsb: %i, msb: %i\n", xlsb, lsb, msb);
+	*reading = results[0]*256*16 + results[1]*16 + results[2]/16;
 
-    *reading = msb*256*16 + lsb*16 + xlsb/16;
-
-    if (res_xlsb != 0 || res_lsb != 0 || res_msb != 0) {
-        return false;
-    }
-    return true;
+	if (res != 0) {
+		return false;
+	}
+	return true;
 }
+
 
 int32_t bmp280_compensate_T_int32(int32_t adc_T)
 {
@@ -216,55 +193,48 @@ bool Sensor_EnableSampling(void)
     return false;
 }
 
-bool Sensor_LoadCalibrationData(void)
-{
+bool Sensor_LoadCalibrationData(void) {
+
 	int res;
 	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
-	uint16_t reg_t1_lsb = TEMP_SENSOR_REG_CAL_T1_LSB;
-	uint16_t reg_t1_msb = TEMP_SENSOR_REG_CAL_T1_MSB;
-	uint16_t reg_t2_lsb = TEMP_SENSOR_REG_CAL_T2_LSB;
-	uint16_t reg_t2_msb = TEMP_SENSOR_REG_CAL_T2_MSB;
-	uint16_t reg_t3_lsb = TEMP_SENSOR_REG_CAL_T3_LSB;
-	uint16_t reg_t3_msb = TEMP_SENSOR_REG_CAL_T3_MSB;
-	uint8_t data;
-	uint8_t t1_lsb;
-	uint8_t t1_msb;
-	uint8_t t2_lsb;
-	uint8_t t2_msb;
-	uint8_t t3_lsb;
-	uint8_t t3_msb;
+	uint16_t regs[] = {TEMP_SENSOR_REG_CAL_T1_LSB, TEMP_SENSOR_REG_CAL_T2_LSB, TEMP_SENSOR_REG_CAL_T3_LSB};
+	uint16_t results[] = {0, 0, 0};
+	uint16_t data;
 	int dev = 0;
 	int flags = 0;
+	int len = 2;
+	int size_regs = sizeof(regs) / sizeof(regs[0]);
 
-	res = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_CAL_T1_LSB, &data, flags);
-	t1_lsb = data;
-	res = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_CAL_T1_MSB, &data, flags);
-	t1_msb = data;
-	res = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_CAL_T2_LSB, &data, flags);
-	t2_lsb = data;
-	res = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_CAL_T2_MSB, &data, flags);
-	t2_msb = data;
-	res = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_CAL_T3_LSB, &data, flags);
-	t3_lsb = data;
-	res = i2c_read_reg(dev, addr, TEMP_SENSOR_REG_CAL_T3_MSB, &data, flags);
-	t3_msb = data;
-
-	printf("t1_lsb: %i, t1_msb: %i, t2_lsb: %i, t2_msb: %i, t3_lsb: %i, t3_msb: %i\n", t1_lsb, t1_msb, t2_lsb, t2_msb, t3_lsb, t3_msb);
-
-	uint16_t t1 = t1_msb * 256 + t1_lsb;
-	int16_t t2 = (int16_t) (t2_msb * 256 + t2_lsb);
-	int16_t t3 = (int16_t) (t3_msb * 256 + t3_lsb);
-
-	printf("t1: %i, t2: %i, t3: %i\n", t1, t2, t3);
-
-	dig_T1 = t1;
-	dig_T2 = t2;
-	dig_T3 = t3;
-
-	if (res == 0) {
-		return true;
+	for (int i = 0; i < size_regs; i++) {
+		res = i2c_read_regs(dev, addr, regs[i], &data, len, flags);
+		results[i] = data;
 	}
-	return false;
+
+	if (res != 0) {
+		return false;
+	}
+
+	dig_T1 = results[0];
+	dig_T2 = results[1];
+	dig_T3 = results[2];
+
+	return true;
+}
+
+bool test(void) {
+
+	int res;
+	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
+	uint16_t reg = TEMP_SENSOR_REG_CAL_T1_LSB;
+	uint16_t data;
+	uint16_t t1;
+	int dev = 0;
+	int flags = 0;
+	int len = 2;
+
+	res = i2c_read_regs(dev, addr, TEMP_SENSOR_REG_CAL_T1_LSB, &data, len, flags);
+
+	printf("t1_lsb: %i, t1_msb: %i\n", data, data >> 8);
 }
 
 bool Sensor_Init(void)
@@ -321,9 +291,7 @@ int Sensor_CmdHandler(int argc, char **argv)
   }
   else if (strncmp(argv[1], "test", 16) == 0)
     {
-    int32_t reading = 0;
-    //Sensor_DoTemperatureReading(&reading);
-    //Sensor_LoadCalibrationData();
+    test();
     }
   return 0;
 
