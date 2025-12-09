@@ -164,7 +164,6 @@ bool Sensor_DoTemperatureReading(int32_t *reading)
 	return true;
 }
 
-
 int32_t bmp280_compensate_T_int32(int32_t adc_T)
 {
 	int32_t t_fine, var1, var2, T;
@@ -197,7 +196,7 @@ bool Sensor_LoadCalibrationData(void) {
 
 	int res;
 	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
-	uint16_t regs[] = {TEMP_SENSOR_REG_CAL_T1_LSB, TEMP_SENSOR_REG_CAL_T2_LSB, TEMP_SENSOR_REG_CAL_T3_LSB};
+	uint16_t regs[] = {TEMP_SENSOR_REG_CAL_T1, TEMP_SENSOR_REG_CAL_T2, TEMP_SENSOR_REG_CAL_T3};
 	uint16_t results[] = {0, 0, 0};
 	uint16_t data;
 	int dev = 0;
@@ -225,16 +224,16 @@ bool test(void) {
 
 	int res;
 	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
-	uint16_t reg = TEMP_SENSOR_REG_CAL_T1_LSB;
+	uint16_t reg = TEMP_SENSOR_REG_CAL_T1;
 	uint16_t data;
 	uint16_t t1;
 	int dev = 0;
 	int flags = 0;
 	int len = 2;
 
-	res = i2c_read_regs(dev, addr, TEMP_SENSOR_REG_CAL_T1_LSB, &data, len, flags);
+	res = i2c_read_regs(dev, addr, reg, &data, len, flags);
 
-	printf("t1_lsb: %i, t1_msb: %i\n", data, data >> 8);
+	printf("t1: %i", data);
 }
 
 bool Sensor_Init(void)

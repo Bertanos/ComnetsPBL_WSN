@@ -20,15 +20,12 @@
 #define TEMP_SENSOR_REG_PRESS_MSB  ()
 #define TEMP_SENSOR_REG_CONFIG     ()
 #define TEMP_SENSOR_REG_CTRL_MEAS  (0xF4)
-#define TEMP_SENSOR_REG_STATUS     ()
+#define TEMP_SENSOR_REG_STATUS     (0xF3)
 #define TEMP_SENSOR_REG_RESET      ()
 
 // Calibration values
-#define TEMP_SENSOR_REG_CAL_T1_LSB (0x88)
-#define TEMP_SENSOR_REG_CAL_T1_MSB (0x89)
-#define TEMP_SENSOR_REG_CAL_T2_LSB (0x8A)
-#define TEMP_SENSOR_REG_CAL_T2_MSB (0x8B)
-#define TEMP_SENSOR_REG_CAL_T3_LSB (0x8C)
-#define TEMP_SENSOR_REG_CAL_T3_MSB (0x8D)
+#define TEMP_SENSOR_REG_CAL_T1     (0x88)
+#define TEMP_SENSOR_REG_CAL_T2     (0x8A)
+#define TEMP_SENSOR_REG_CAL_T3     (0x8C)
 
 bool Sensor_Init(void);
