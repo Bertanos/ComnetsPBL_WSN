@@ -125,19 +125,37 @@ bool Sensor_GetChipId(uint8_t *id)
 
 bool Sensor_Reset(void)
 {
-  // From the datasheet:
-  // "The “reset” register contains the soft reset word reset[7:0]. If the value 0xB6 is written to the register,
-  // the device is reset using the complete power-on-reset procedure. Writing other values than 0xB6 has
-  // no effect. The readout value is always 0x00"
-  //
-  // Optional //
-  return true;
+	int res;
+	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
+	uint16_t reg = TEMP_SENSOR_REG_RESET;
+	uint8_t data = 0xB6;
+	int dev = 0;
+	int flags = 0;
+
+	res = i2c_write_reg(dev, addr, reg, data, flags);
+
+	if (res != 0) {
+		return false;
+	}
+	return true;
 }
 
 bool Sensor_GetStatus(uint8_t *status)
 {
-  // The “status” register contains two bits which indicate the status of the device.
-  // Optional
+	int res;
+	uint16_t addr = TEMP_SENSOR_I2C_ADDR;
+	uint16_t reg = TEMP_SENSOR_REG_STATUS;
+	uint8_t data;
+	int dev = 0;
+	int flags = 0;
+
+	res = i2c_read_reg(dev, addr, reg, &data, flags);
+
+	if (res != 0) {
+		return false;
+	}
+	*status = data;
+	return true;
 }
 
 bool Sensor_DoTemperatureReading(int32_t *reading)
@@ -288,14 +306,23 @@ int Sensor_CmdHandler(int argc, char **argv)
     reading = bmp280_compensate_T_int32(reading);
 	printf("Compensated Temperature: %d (0x%x)\n", reading, reading);
   }
-  else if (strncmp(argv[1], "test", 16) == 0)
-    {
-    test();
-    }
+  else if (strncmp(argv[1], "status", 16) == 0)
+  {
+  	uint8_t status;
+  	Sensor_GetStatus(&status);
+  	printf("updating: %s\n", (status & 1) ? "true" : "false");
+  	printf("measuring: %s\n", ((status >> 3) & 1) ? "true" : "false");
+  }
+  else if (strncmp(argv[1], "reset", 16) == 0)
+  {
+  	bool res;
+  	res = Sensor_Reset();
+  	printf("sensor reset: %s\n", (res) ? "true" : "false");
+  }
   return 0;
 
   usage:
-  printf("Usage: sensor <id|readreg|readregs|writereg>\n");
+  printf("Usage: sensor <id|readreg|readregs|writereg|sample|status|reset>\n");
   return 1;
 }
 SHELL_COMMAND(sensor, "Sensor cmd handler", Sensor_CmdHandler);

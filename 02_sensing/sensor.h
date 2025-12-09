@@ -21,7 +21,7 @@
 #define TEMP_SENSOR_REG_CONFIG     ()
 #define TEMP_SENSOR_REG_CTRL_MEAS  (0xF4)
 #define TEMP_SENSOR_REG_STATUS     (0xF3)
-#define TEMP_SENSOR_REG_RESET      ()
+#define TEMP_SENSOR_REG_RESET      (0xE0)
 
 // Calibration values
 #define TEMP_SENSOR_REG_CAL_T1     (0x88)
