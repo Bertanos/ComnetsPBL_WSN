@@ -31,6 +31,9 @@ static kernel_pid_t threadPid = KERNEL_PID_UNDEF;
 static msg_t ipcMsg = (msg_t) {.type = WSN_IPC_PERIODIC_OPERATION};
 
 static uint32_t operationPeriod = 2000000;
+static uint32_t startupDelay = 5000000;
+
+static uint8_t packet_size_byte = 16;
 
 static bool running = false;
 static ztimer_t intervalTimer;
@@ -38,6 +41,7 @@ static ztimer_t intervalTimer;
 static WSN_Role_e myRole = WSN_UNSET_ROLE;
 
 static char *rootAddrStr = "2001::1";
+static int num_messages = 0;
 
 // Function for root node to parse incoming packets.
 static void PacketReceptionHandler(gnrc_pktsnip_t *pkt)
@@ -89,14 +93,22 @@ static void PacketReceptionHandler(gnrc_pktsnip_t *pkt)
 // Function for sensor node to periodically do sensing and sending tasks
 static void PeriodicSensingTask(void)
 {
-  // FILL IN
-  //
-  //
-  //
-  //
-  char buf[16];
-  memset(buf, 0x00, sizeof(buf));
-  strcpy(buf, "TEST DATA"); 
+  num_messages++;
+  printf("%s %d\n", "numb mesage:", num_messages);
+  if (num_messages >= 100) {
+    running = false;
+  }
+
+  int32_t temperature_num = Sensor_GetTemperature();
+
+  int length = snprintf(NULL, 0, "%d", temperature_num);
+  char* temperature_str = (char*) malloc(length + 1);
+  snprintf(temperature_str, length + 1, "%d", temperature_num);
+
+  char buf[packet_size_byte + 1];
+  memset(buf, 0x01, packet_size_byte);
+  buf[sizeof(buf)-1] = 0x00;
+  //strcpy(buf, temperature_str);
   //
   //
   //
@@ -288,7 +300,7 @@ int WSN_CmdHandler(int argc, char **argv)
 }
 SHELL_COMMAND(wsn, "WSN Command handler", WSN_CmdHandler);
 
-int main(void)
+int main2(void)
 {
   /* we need a message queue for the thread running the shell in order to
      * receive potentially fast incoming networking packets */
@@ -308,4 +320,32 @@ int main(void)
 
   /* should be never reached */
   return 0;
+}
+
+int main1(void) {
+	int iterations = 30;
+  ztimer_sleep(ZTIMER_MSEC, 5000);
+
+    bool ret = Sensor_Init();
+    if (!ret) {
+        printf("Sensor failed to init!\n");
+    }
+
+    uint8_t id = 0xff;
+    ret = Sensor_GetChipId(&id);
+    printf("0x%x (%s) \n", id, (id == TEMP_SENSOR_CHIP_ID) ? "CORRECT" : "INCORRECT");
+
+    for(int i = 0; i < iterations; i++) {
+        Sensor_DoTemperatureSampling();
+        ztimer_sleep(ZTIMER_MSEC, 1000);
+    }
+}
+
+int main(void) {
+  Sensor_Init();
+
+  ztimer_sleep(ZTIMER_USEC, startupDelay);
+  WSN_Init(WSN_SENSOR_ROLE);
+  ztimer_set_msg(ZTIMER_USEC, &intervalTimer, 0, &ipcMsg, threadPid);
+  running = true;
 }
