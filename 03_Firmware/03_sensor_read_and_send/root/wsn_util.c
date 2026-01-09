@@ -90,5 +90,5 @@ void WSNUtil_Send(const char *addr_str, const char *data, size_t size)
          * above
          * => use temporary variable for output */
   printf("Success: sent %u byte(s) to [%s]:%u\n", payload_size, addr_str,
-         port); 
+         port);
 }

@@ -21,6 +21,7 @@
 
 #include "main.h"
 #include "wsn_util.h"
+#include "parameters.h"
 
 #define MSG_QUEUE_SIZE     (8)
 
@@ -30,11 +31,6 @@ static char threadStack[THREAD_STACKSIZE_DEFAULT];
 static kernel_pid_t threadPid = KERNEL_PID_UNDEF;
 static msg_t ipcMsg = (msg_t) {.type = WSN_IPC_PERIODIC_OPERATION};
 
-static uint32_t operationPeriod = 1000000;
-static uint32_t startupDelay = 5000000;
-
-static uint8_t sensor_resolution_bit = 20; // {16, 17, 18, 19, 20}
-
 static bool running = false;
 static ztimer_t intervalTimer;
 
@@ -42,6 +38,7 @@ static WSN_Role_e myRole = WSN_UNSET_ROLE;
 
 static char *rootAddrStr = "2001::1";
 static int num_messages = 0;
+static int sending_counter = 0;
 
 // Function for root node to parse incoming packets.
 static void PacketReceptionHandler(gnrc_pktsnip_t *pkt)
@@ -95,7 +92,7 @@ static void PeriodicSensingTask(void)
 {
   num_messages++;
   printf("%s %d\n", "numb mesage:", num_messages);
-  if (num_messages >= 100) {
+  if (num_messages >= NUMBER_OF_MESSEGES) {
     running = false;
   }
 
@@ -109,9 +106,13 @@ static void PeriodicSensingTask(void)
   memset(buf, 0x00, sizeof(buf));
   strcpy(buf, temperature_str);
 
-  printf("Temperature to be send is: %s\n", buf);
+  printf("Temperature: %s\n", buf);
 
-  WSNUtil_Send(rootAddrStr, buf, strlen(buf));
+  if (sending_counter == 0) {
+    WSNUtil_Send(rootAddrStr, buf, strlen(buf));
+    sending_counter = REDUCED_SENDING_RATE;
+  }
+  sending_counter--;
 }
 
 void *WSN_NodeThread(void *arg)
@@ -157,7 +158,7 @@ void *WSN_NodeThread(void *arg)
 
           if (running)
           {
-            ztimer_set_msg(ZTIMER_USEC, &intervalTimer, operationPeriod, &ipcMsg, threadPid);
+            ztimer_set_msg(ZTIMER_USEC, &intervalTimer, OPERATION_PERIOD_US, &ipcMsg, threadPid);
           }
           break;
         }
@@ -241,9 +242,11 @@ void WSN_Deinit(void)
 }
 
 int main(void) {
-  Sensor_Init(sensor_resolution_bit);
-
-  ztimer_sleep(ZTIMER_USEC, startupDelay);
+  ztimer_sleep(ZTIMER_USEC, STARTUP_DELAY_US);
+  Sensor_Init(SENSOR_RESOLUTION_BIT);
+  printf("Operating rate is: %d\n", OPERATION_PERIOD_US / 1000);
+  printf("Reduced sending rate is: %d\n", REDUCED_SENDING_RATE);
+  printf("Hello I'm the sensor node\n");
   WSN_Init(WSN_SENSOR_ROLE);
   ztimer_set_msg(ZTIMER_USEC, &intervalTimer, 0, &ipcMsg, threadPid);
   running = true;
