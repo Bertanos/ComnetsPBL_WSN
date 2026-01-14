@@ -147,5 +147,5 @@ threading.Thread(target=read_serial_bus, args=(s0, "Temperature: ", queue_sensor
 s1 = serial.Serial('/dev/ttyACM1')
 threading.Thread(target=read_serial_bus, args=(s1, "payload: ", queue_root), daemon=True).start()
 
-ani = animation.FuncAnimation(fig, animate, init_func=init, interval=operating_rate, blit=True)
+ani = animation.FuncAnimation(fig, animate, init_func=init, interval=operating_rate, blit=False)
 plt.show()

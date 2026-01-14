@@ -247,7 +247,7 @@ int main(void) {
   printf("Operating rate is: %d\n", OPERATION_PERIOD_US / 1000);
   printf("Reduced sending rate is: %d\n", REDUCED_SENDING_RATE);
   printf("Hello I'm the sensor node\n");
-  ztimer_sleep(ZTIMER_MSEC, 500);
+  ztimer_sleep(ZTIMER_USEC, STARTUP_DELAY_US);
   WSN_Init(WSN_SENSOR_ROLE);
   ztimer_set_msg(ZTIMER_USEC, &intervalTimer, 0, &ipcMsg, threadPid);
   running = true;
