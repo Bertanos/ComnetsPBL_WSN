@@ -14,7 +14,6 @@
 #include "net/gnrc/rpl.h"
 #include "net/gnrc/rpl/structs.h"
 
-#include "sensor.h"
 #include "periph/i2c.h"
 
 #include "ztimer.h"
@@ -33,7 +32,7 @@ static msg_t ipcMsg = (msg_t) {.type = WSN_IPC_PERIODIC_OPERATION};
 static uint32_t operationPeriod = 2000000;
 static uint32_t startupDelay = 5000000;
 
-static uint8_t packet_size_byte = 16;
+static uint8_t packet_size_byte = 32;
 
 static bool running = false;
 static ztimer_t intervalTimer;
@@ -99,19 +98,10 @@ static void PeriodicSensingTask(void)
     running = false;
   }
 
-  int32_t temperature_num = Sensor_GetTemperature();
-
-  int length = snprintf(NULL, 0, "%d", temperature_num);
-  char* temperature_str = (char*) malloc(length + 1);
-  snprintf(temperature_str, length + 1, "%d", temperature_num);
-
   char buf[packet_size_byte + 1];
-  memset(buf, 0x01, packet_size_byte);
+  memset(buf, 'A', packet_size_byte);
   buf[sizeof(buf)-1] = 0x00;
-  //strcpy(buf, temperature_str);
-  //
-  //
-  //
+
   WSNUtil_Send(rootAddrStr, buf, strlen(buf));
 }
 
@@ -241,108 +231,7 @@ void WSN_Deinit(void)
   running = false;
 }
 
-int WSN_CmdHandler(int argc, char **argv)
-{
-  if (argc < 2)
-  {
-    goto usage;
-  }
-  if (strncmp(argv[1], "root", 16) == 0)
-  {
-    WSN_Init(WSN_ROOT_ROLE);
-    running = true;
-  }
-  else if (strncmp(argv[1], "sensor", 16) == 0)
-  {
-    WSN_Init(WSN_SENSOR_ROLE);
-    ztimer_set_msg(ZTIMER_USEC, &intervalTimer, 0, &ipcMsg, threadPid);
-    running = true;
-  }
-  else if (strncmp(argv[1], "start", 16) == 0)
-  {
-    if (myRole == WSN_UNSET_ROLE)
-    {
-      printf("Need to set role first! wsn <sensor|root>\n");
-      return;
-    }
-    else if (myRole == WSN_SENSOR_ROLE)
-    {
-      ztimer_set_msg(ZTIMER_USEC, &intervalTimer, 0, &ipcMsg, threadPid);
-    }
-    running = true;
-  }
-  else if (strncmp(argv[1], "stop", 16) == 0)
-  {
-    if (ztimer_is_set(ZTIMER_USEC, &intervalTimer))
-    {
-      ztimer_remove(ZTIMER_USEC, &intervalTimer);
-    }
-    running = false;
-  }
-  else if (strncmp(argv[1], "deinit", 16) == 0)
-  {
-    WSN_Deinit();
-  }
-  else 
-  {
-    goto usage;
-  }
-
-  return 0;
-
-  usage:
-  printf("Usage: wsn <sensor|root|start|stop|deinit>\n");
-  if (myRole != WSN_UNSET_ROLE)
-  {
-    printf("Current role: %s\n", (myRole == WSN_SENSOR_ROLE) ? "SENSOR" : "ROOT");
-  }
-  return 1;
-}
-SHELL_COMMAND(wsn, "WSN Command handler", WSN_CmdHandler);
-
-int main2(void)
-{
-  /* we need a message queue for the thread running the shell in order to
-     * receive potentially fast incoming networking packets */
-  msg_init_queue(_main_msg_queue, MSG_QUEUE_SIZE);
-  puts("RIOT network stack example application");
-
-  bool ret = Sensor_Init();
-  if (!ret)
-  {
-    printf("Sensor failed to init!\n");
-  }
-
-  /* start shell */
-  puts("All up, running the shell now");
-  char line_buf[SHELL_DEFAULT_BUFSIZE];
-  shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
-
-  /* should be never reached */
-  return 0;
-}
-
-int main1(void) {
-	int iterations = 30;
-  ztimer_sleep(ZTIMER_MSEC, 5000);
-
-    bool ret = Sensor_Init();
-    if (!ret) {
-        printf("Sensor failed to init!\n");
-    }
-
-    uint8_t id = 0xff;
-    ret = Sensor_GetChipId(&id);
-    printf("0x%x (%s) \n", id, (id == TEMP_SENSOR_CHIP_ID) ? "CORRECT" : "INCORRECT");
-
-    for(int i = 0; i < iterations; i++) {
-        Sensor_DoTemperatureSampling();
-        ztimer_sleep(ZTIMER_MSEC, 1000);
-    }
-}
-
 int main(void) {
-  Sensor_Init();
 
   ztimer_sleep(ZTIMER_USEC, startupDelay);
   WSN_Init(WSN_SENSOR_ROLE);
