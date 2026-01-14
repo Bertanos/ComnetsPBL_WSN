@@ -2,10 +2,10 @@
 #ifndef COMNETSPBL_WSN_PARAMETERS_H
 #define COMNETSPBL_WSN_PARAMETERS_H
 
-#define OPERATION_PERIOD_US (100000)
-#define REDUCED_SENDING_RATE (5)       // eg: 3 => send only every 3rd operation period
+#define OPERATION_PERIOD_US (250 * 1000)
+#define REDUCED_SENDING_RATE (10)       // eg: 3 => send only every 3rd operation period
 #define STARTUP_DELAY_US (5000000)
-#define NUMBER_OF_MESSEGES (100)
+#define NUMBER_OF_MESSEGES (10000000)
 #define SENSOR_RESOLUTION_BIT (16)          // {16, 17, 18, 19, 20}
 
 #endif //COMNETSPBL_WSN_PARAMETERS_H
